@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import {
   motion,
@@ -10,16 +8,12 @@ import {
 import { Circle, X, Sparkles, TrendingUp, Phone, Share2 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 
-// ------------------------------------------------------------------
-// [1] Supabase 클라이언트 설정
-// ------------------------------------------------------------------
+// Supabase 클라이언트 초기화
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// ------------------------------------------------------------------
-// [2] 데이터 및 상수 정의
-// ------------------------------------------------------------------
 const questionBank = [
   {
     id: "R_01",
@@ -323,16 +317,41 @@ const questionBank = [
   },
 ];
 
-const resultMapping: any = {
-  R: { title: "마이더스의 손", emoji: "🛠️", desc: "손만 대면 고쳐내는" },
-  I: { title: "천재 해커", emoji: "💻", desc: "10시간 걸릴 일을 10분 컷!" },
-  A: { title: "트렌드 세터", emoji: "🎨", desc: "숨만 쉬어도 힙한" },
-  S: { title: "핵인싸 아이돌", emoji: "💖", desc: "어딜 가나 사랑받는" },
-  E: { title: "영앤리치 CEO", emoji: "👑", desc: "떡잎부터 남다른" },
-  C: { title: "인간 AI", emoji: "🤖", desc: "실수란 없다, 걸어 다니는" },
+const resultMapping = {
+  R: {
+    title: "마이더스의 손",
+    emoji: "🛠️",
+    desc: "손만 대면 고쳐내는",
+  },
+  I: {
+    title: "천재 해커",
+    emoji: "💻",
+    desc: "10시간 걸릴 일을 10분 컷!",
+  },
+  A: {
+    title: "트렌드 세터",
+    emoji: "🎨",
+    desc: "숨만 쉬어도 힙한",
+  },
+  S: {
+    title: "핵인싸 아이돌",
+    emoji: "💖",
+    desc: "어딜 가나 사랑받는",
+  },
+  E: {
+    title: "영앤리치 CEO",
+    emoji: "👑",
+    desc: "떡잎부터 남다른",
+  },
+  C: {
+    title: "인간 AI",
+    emoji: "🤖",
+    desc: "실수란 없다, 걸어 다니는",
+  },
 };
 
-const hollandTypes: any = {
+// 홀랜드 유형 한글명
+const hollandTypes = {
   R: "실재형",
   I: "탐구형",
   A: "예술형",
@@ -341,7 +360,8 @@ const hollandTypes: any = {
   C: "관습형",
 };
 
-const recommendMajors: any = {
+// 학과 추천 풀 (이색 3개 + 일반 2개 = 총 5개)
+const recommendMajors = {
   R: [
     "🚁 드론공간정보과",
     "🐴 말산업육성과",
@@ -386,13 +406,16 @@ const recommendMajors: any = {
   ],
 };
 
-function getRandomMajors(type: string, count = 2) {
+// 배열에서 랜덤하게 n개 선택하는 함수
+function getRandomMajors(type, count = 2) {
   const majors = [...recommendMajors[type]];
   const selected = [];
+
   for (let i = 0; i < count && majors.length > 0; i++) {
     const randomIndex = Math.floor(Math.random() * majors.length);
     selected.push(majors.splice(randomIndex, 1)[0]);
   }
+
   return selected;
 }
 
@@ -402,50 +425,45 @@ const loadingMessages = [
   "📊 나의 성향과 학과 적합도 매칭 중...",
 ];
 
-// ------------------------------------------------------------------
-// [3] Hook: 테스트 로직
-// ------------------------------------------------------------------
 function useTestLogic() {
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [scores, setScores] = useState<any>({
-    R: 0,
-    I: 0,
-    A: 0,
-    S: 0,
-    E: 0,
-    C: 0,
-  });
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const [scores, setScores] = useState({ R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 });
+  const [startTime, setStartTime] = useState(null);
 
   useEffect(() => {
     const types = ["R", "I", "A", "S", "E", "C"];
-    const selected: any[] = [];
+    const selected = [];
+
     types.forEach((type) => {
       const filtered = questionBank.filter((q) => q.type === type);
       const shuffled = [...filtered].sort(() => Math.random() - 0.5);
       selected.push(...shuffled.slice(0, 2));
     });
+
     setQuestions(selected.sort(() => Math.random() - 0.5));
   }, []);
 
-  const handleSwipe = (direction: string, questionType: string) => {
+  const handleSwipe = (direction, questionType) => {
     if (direction === "right") {
-      const elapsed = Date.now() - (startTime || Date.now());
+      const elapsed = Date.now() - startTime;
       const points = elapsed < 2000 ? 1.5 : 1;
-      setScores((prev: any) => ({
+      setScores((prev) => ({
         ...prev,
         [questionType]: prev[questionType] + points,
       }));
     }
-    if (currentIndex < questions.length) {
+
+    if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
       setStartTime(Date.now());
+    } else {
+      setCurrentIndex((prev) => prev + 1);
     }
   };
 
   const getResult = () => {
-    const entries = Object.entries(scores) as [string, number][];
+    const entries = Object.entries(scores);
     const maxScore = Math.max(...entries.map(([, score]) => score));
     const winners = entries.filter(([, score]) => score === maxScore);
     const [type] = winners[Math.floor(Math.random() * winners.length)];
@@ -453,7 +471,9 @@ function useTestLogic() {
   };
 
   useEffect(() => {
-    if (questions.length > 0) setStartTime(Date.now());
+    if (questions.length > 0) {
+      setStartTime(Date.now());
+    }
   }, [questions]);
 
   return {
@@ -466,9 +486,6 @@ function useTestLogic() {
   };
 }
 
-// ------------------------------------------------------------------
-// [4] 하위 컴포넌트들
-// ------------------------------------------------------------------
 function Header() {
   return (
     <header className="fixed top-0 left-0 w-full h-14 sm:h-16 z-50 backdrop-blur-xl bg-slate-950/80 border-b border-white/10">
@@ -483,7 +500,7 @@ function Header() {
   );
 }
 
-function StartScreen({ onStart }: { onStart: () => void }) {
+function StartScreen({ onStart }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -496,16 +513,19 @@ function StartScreen({ onStart }: { onStart: () => void }) {
       >
         <Sparkles className="w-16 h-16 sm:w-20 sm:h-20 text-lime-400 mb-4 sm:mb-6 mx-auto" />
       </motion.div>
+
       <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-3 sm:mb-4 text-white leading-tight">
         나에게 딱 맞는
         <br />
         고등학교 학과 찾기
       </h1>
+
       <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 sm:mb-8 font-bold">
         인문계? 특성화고? 내 적성은 어디일까?
         <br />
         (AI 진로 분석) 🔥
       </p>
+
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -518,13 +538,17 @@ function StartScreen({ onStart }: { onStart: () => void }) {
   );
 }
 
-function ProgressBar({ progress }: { progress: number }) {
-  const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
-  useEffect(() => {
+function ProgressBar({ progress }) {
+  const [loadingMessage, setLoadingMessage] = React.useState(
+    loadingMessages[0]
+  );
+
+  React.useEffect(() => {
     const interval = setInterval(() => {
       const randomIndex = Math.floor(Math.random() * loadingMessages.length);
       setLoadingMessage(loadingMessages[randomIndex]);
     }, 2000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -551,18 +575,12 @@ function ProgressBar({ progress }: { progress: number }) {
   );
 }
 
-function SwipeCard({
-  question,
-  onSwipe,
-}: {
-  question: any;
-  onSwipe: (dir: string) => void;
-}) {
+function SwipeCard({ question, onSwipe }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
 
-  const handleDragEnd = (_: any, info: any) => {
+  const handleDragEnd = (_, info) => {
     if (Math.abs(info.offset.x) > 100) {
       onSwipe(info.offset.x > 0 ? "right" : "left");
     }
@@ -586,45 +604,84 @@ function SwipeCard({
   );
 }
 
-function ResultView({
-  resultType,
-  onRestart,
-}: {
-  resultType: string;
-  onRestart: () => void;
-}) {
+function ResultView({ resultType, onRestart }) {
   const [phone, setPhone] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const result = resultMapping[resultType];
+
+  // 컴포넌트 마운트 시 랜덤으로 2개 학과 선택 (리렌더링 시에도 유지)
   const [selectedMajors] = useState(() => getRandomMajors(resultType, 2));
 
-  // 유효성 검사 및 저장
+  // 전화번호 유효성 검사 함수
+  const validatePhone = (phoneNumber) => {
+    if (!phoneNumber || phoneNumber.trim() === "") {
+      return { valid: false, message: "전화번호를 입력해주세요." };
+    }
+
+    // 숫자와 하이픈만 허용하는 정규식
+    const phoneRegex = /^[0-9-]+$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      return {
+        valid: false,
+        message: "전화번호는 숫자와 하이픈(-)만 입력 가능합니다.",
+      };
+    }
+
+    // 하이픈 제거 후 숫자만 추출
+    const digitsOnly = phoneNumber.replace(/-/g, "");
+
+    // 10자리 또는 11자리 숫자인지 확인
+    if (digitsOnly.length < 10 || digitsOnly.length > 11) {
+      return {
+        valid: false,
+        message: "전화번호는 10자리 또는 11자리여야 합니다.",
+      };
+    }
+
+    return { valid: true };
+  };
+
+  // 사전 예약하기 버튼 클릭 핸들러
   const handlePreOrder = async () => {
-    if (!phone || phone.trim().length < 10) {
-      alert("올바른 전화번호를 입력해주세요.");
+    // 유효성 검사
+    const validation = validatePhone(phone);
+    if (!validation.valid) {
+      alert(validation.message);
       return;
     }
 
     setIsSubmitting(true);
+
     try {
+      // 추천된 학과를 텍스트로 변환 (2개 학과를 쉼표로 구분)
       const majorText = selectedMajors.join(", ");
-      const { error } = await supabase.from("pre_orders").insert([
-        {
-          phone: phone.trim(),
-          major: majorText,
-          created_at: new Date().toISOString(),
-        },
-      ]);
 
-      if (error) throw error;
+      // Supabase에 데이터 저장
+      const { data, error } = await supabase
+        .from("pre_orders")
+        .insert([
+          {
+            phone: phone.trim(),
+            major: majorText,
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .select();
 
+      if (error) {
+        throw error;
+      }
+
+      // 성공 시 팝업 표시
       setShowSuccessPopup(true);
+
+      // 전화번호 입력 필드 초기화
       setPhone("");
     } catch (error) {
       console.error("데이터 저장 오류:", error);
-      alert("오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      alert("오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setIsSubmitting(false);
     }
@@ -636,6 +693,7 @@ function ResultView({
       text: `${result.desc} ${result.title} ${result.emoji}\n나의 숨겨진 재능을 찾아보세요!`,
       url: window.location.href,
     };
+
     try {
       if (navigator.share) {
         await navigator.share(shareData);
@@ -645,7 +703,11 @@ function ResultView({
         setTimeout(() => setShowToast(false), 3000);
       }
     } catch (err) {
-      // share cancel etc
+      if (err.name !== "AbortError") {
+        await navigator.clipboard.writeText(window.location.href);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      }
     }
   };
 
@@ -666,9 +728,12 @@ function ResultView({
       <h2 className="text-xl sm:text-2xl font-bold text-gray-300 mb-1 sm:mb-2">
         {result.desc}
       </h2>
+
+      {/* 홀랜드 유형 뱃지 */}
       <span className="text-lime-400 text-xs font-bold border border-lime-400/30 rounded-full px-3 py-1 mb-2">
         TYPE {resultType} : {hollandTypes[resultType]}
       </span>
+
       <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-6 sm:mb-8 text-white">
         {result.title}
       </h1>
@@ -680,7 +745,8 @@ function ResultView({
           </p>
         </div>
         <div className="flex gap-2 justify-center flex-wrap">
-          {selectedMajors.map((major: string, index: number) => (
+          {/* 공개된 학과 2개 */}
+          {selectedMajors.map((major, index) => (
             <motion.span
               key={index}
               initial={{ opacity: 0, y: 10 }}
@@ -691,6 +757,8 @@ function ResultView({
               {major}
             </motion.span>
           ))}
+
+          {/* 잠긴 학과 3개 (블러 처리) */}
           {[1, 2, 3].map((_, index) => (
             <motion.span
               key={`locked-${index}`}
@@ -769,6 +837,7 @@ function ResultView({
         )}
       </AnimatePresence>
 
+      {/* 사전 예약 성공 팝업 */}
       <AnimatePresence>
         {showSuccessPopup && (
           <motion.div
@@ -815,6 +884,7 @@ function ResultView({
       >
         다시 테스트하기
       </button>
+
       <div className="text-center text-white/20 text-[10px] mt-6 sm:mt-8">
         © 2026 PADA Labs. All rights reserved.
       </div>
@@ -822,9 +892,11 @@ function ResultView({
   );
 }
 
-function AnalyzingView({ onComplete }: { onComplete: () => void }) {
+// AI 분석 로딩 화면 컴포넌트
+function AnalyzingView({ onComplete }) {
   const [progressValue, setProgressValue] = useState(0);
   const [textIndex, setTextIndex] = useState(0);
+
   const analysisTexts = [
     "🧬 홀랜드(Holland) 적성 로직에 따른 응답 분석 중...",
     "🏫 전국 특성화고/마이스터고 데이터 대조 중...",
@@ -832,16 +904,18 @@ function AnalyzingView({ onComplete }: { onComplete: () => void }) {
   ];
 
   useEffect(() => {
+    // 프로그레스 바 애니메이션 (3초간 0 -> 100)
     const progressInterval = setInterval(() => {
       setProgressValue((prev) => {
         if (prev >= 100) {
           clearInterval(progressInterval);
           return 100;
         }
-        return prev + 100 / 30;
+        return prev + 100 / 30; // 3초 = 3000ms, 100ms 간격으로 30번
       });
     }, 100);
 
+    // 텍스트 변경 타이머
     const timer1 = setTimeout(() => setTextIndex(1), 1000);
     const timer2 = setTimeout(() => setTextIndex(2), 2500);
     const timer3 = setTimeout(() => onComplete(), 3000);
@@ -861,9 +935,17 @@ function AnalyzingView({ onComplete }: { onComplete: () => void }) {
       exit={{ opacity: 0 }}
       className="h-full flex flex-col items-center justify-center p-6 text-center"
     >
+      {/* 두근거리는 아이콘 */}
       <motion.div
-        animate={{ scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.7, 1, 0.7],
+        }}
+        transition={{
+          duration: 1.5,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
         className="mb-8"
       >
         <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-lime-400/20 flex items-center justify-center border-2 border-lime-400/50">
@@ -882,6 +964,8 @@ function AnalyzingView({ onComplete }: { onComplete: () => void }) {
           </svg>
         </div>
       </motion.div>
+
+      {/* 프로그레스 바 */}
       <div className="w-full max-w-xs mb-8">
         <div className="bg-white/10 h-2 rounded-full overflow-hidden">
           <motion.div
@@ -895,6 +979,8 @@ function AnalyzingView({ onComplete }: { onComplete: () => void }) {
           {Math.round(progressValue)}%
         </div>
       </div>
+
+      {/* 시간별 텍스트 */}
       <AnimatePresence mode="wait">
         <motion.p
           key={textIndex}
@@ -911,34 +997,39 @@ function AnalyzingView({ onComplete }: { onComplete: () => void }) {
   );
 }
 
-// ------------------------------------------------------------------
-// [5] 메인 페이지 컴포넌트
-// ------------------------------------------------------------------
-export default function Home() {
+export default function App() {
   const [stage, setStage] = useState("start");
   const { questions, currentIndex, handleSwipe, getResult, progress } =
     useTestLogic();
+
   const currentQuestion = questions[currentIndex];
   const isComplete = currentIndex >= questions.length && questions.length > 0;
 
   useEffect(() => {
-    if (isComplete && stage === "test") setStage("analyzing");
+    if (isComplete && stage === "test") {
+      setStage("analyzing");
+    }
   }, [isComplete, stage]);
 
-  const handleAnswer = (answer: string) => {
-    if (currentQuestion) handleSwipe(answer, currentQuestion.type);
+  const handleAnswer = (answer) => {
+    if (currentQuestion) {
+      handleSwipe(answer, currentQuestion.type);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-slate-950 overflow-hidden">
+      {/* 배경 효과 - fixed로 전체 화면 커버 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-violet-900/40 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-blue-900/20 to-transparent"></div>
       </div>
 
+      {/* 메인 컨텐츠 영역 */}
       <div className="relative z-10 h-full w-full flex justify-center overflow-y-auto">
         <div className="w-full max-w-[420px] h-full flex flex-col">
           <Header />
+
           <AnimatePresence mode="wait">
             {stage === "start" && (
               <motion.div
@@ -960,12 +1051,15 @@ export default function Home() {
                 exit={{ opacity: 0 }}
                 className="h-full flex flex-col pt-14 sm:pt-16"
               >
+                {/* 프로그레스 바 영역 - 고정 높이 */}
                 <div className="flex-shrink-0 p-4 sm:p-6 pb-2">
                   <div className="text-white text-center mb-2 font-bold text-base sm:text-lg">
                     나의 잠재력 분석 중... {Math.round(progress)}%
                   </div>
                   <ProgressBar progress={progress} />
                 </div>
+
+                {/* 카드 영역 - 남은 공간 차지 */}
                 <div className="flex-1 relative flex items-center justify-center px-4 sm:px-6 min-h-0">
                   <AnimatePresence>
                     {currentQuestion && (
@@ -977,6 +1071,8 @@ export default function Home() {
                     )}
                   </AnimatePresence>
                 </div>
+
+                {/* 버튼 영역 - 고정 높이, 항상 화면 내 표시 */}
                 <div className="flex-shrink-0 flex gap-4 justify-center py-4 sm:py-6 pb-6 sm:pb-8">
                   <motion.button
                     whileHover={{ scale: 1.1 }}
@@ -989,6 +1085,7 @@ export default function Home() {
                       strokeWidth={4}
                     />
                   </motion.button>
+
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
