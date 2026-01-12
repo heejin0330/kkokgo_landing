@@ -57,48 +57,69 @@ interface ResultDataType {
 
 type ResultDataMap = Record<HollandType, ResultDataType>;
 
+// [수정] 프리미엄 데이터 구조 확장
 interface PremiumContent {
-  summary: string;
-  roadmap: string;
+  keywords: string[]; // 핵심 키워드 3개
+  strength: string; // 심층 분석 (나의 무기)
+  study: string; // 맞춤 공부법
+  strategy: string; // 필살기 스펙 전략
 }
 
-// [수정] 호칭 개선 (대표님 -> 자연스러운 문구)
+// [교체] PREMIUM_MESSAGES 전체 내용을 아래 코드로 덮어쓰세요.
 const PREMIUM_MESSAGES: Record<HollandType, PremiumContent> = {
   R: {
-    summary:
-      "손재주가 뛰어난 **실재형(R)** 성향이 강해, 머리보다 손으로 결과를 만드는 엔지니어 기질이 탁월합니다.",
-    roadmap:
-      "마이스터고 진학 후 **기계설계산업기사** 자격증 취득 시, 공기업 기술직 합격률이 60% 이상 상승합니다.",
+    keywords: ["#금손_엔지니어", "#현실적_해결사", "#도구_마스터"],
+    strength:
+      "**실재형(R)**인 당신은 말보다 행동으로 보여주는 사람입니다. 복잡한 이론보다는 눈앞에 보이는 기계나 도구를 다룰 때 엄청난 집중력을 발휘하죠. 남들은 고치기 힘들어하는 물건도 뚝딱 고쳐내는 **타고난 엔지니어의 감각**이 당신의 최대 무기입니다.",
+    study:
+      "책상에만 앉아있는 공부는 비효율적입니다. **직접 실습하고 체험하는 방식**이 최고! 이론을 배운 뒤에는 반드시 관련 키트를 조립하거나 실험해보세요. 눈으로 보고 손으로 만져야 머리에 남습니다.",
+    strategy:
+      "마이스터고 진학 후 1학년 때 **기능사 자격증** 2개 이상 취득을 목표로 하세요. 특히 **기계설계/전기** 분야 자격증은 공기업 고졸 공채의 필수 스펙입니다. 프로젝트 실습 사진을 모아 포트폴리오를 만드는 것도 잊지 마세요.",
   },
   I: {
-    summary:
-      "논리적인 **탐구형(I)** 성향이 가장 강하며, 복잡한 문제를 파고들어 해결하는 **연구원/개발자** 잠재력이 높습니다.",
-    roadmap:
-      "SW마이스터고 진학 후 **알고리즘 동아리** 활동을 추천하며, **정보처리기능사** 취득 시 대기업 개발직군 서류 통과율이 급상승합니다.",
+    keywords: ["#논리왕", "#지적_호기심", "#데이터_분석가"],
+    strength:
+      "**탐구형(I)**인 당신은 '왜?'라는 질문을 던지고 끝까지 답을 찾아내는 끈기가 있습니다. 남들이 놓치는 디테일을 발견하고 논리적으로 분석하는 능력은 **연구원이나 개발자**로서 대체 불가능한 재능입니다.",
+    study:
+      "무조건 외우는 암기식 공부는 쥐약입니다. **원리와 인과관계**를 이해해야 합니다. 혼자 조용히 깊게 파고들 수 있는 환경을 만들고, '왜 그럴까?'를 스스로 정리해보는 노트 필기법을 추천합니다.",
+    strategy:
+      "SW/과학 특성화고에서 **알고리즘 동아리**나 **학술 동아리** 활동에 올인하세요. **정보처리기능사**는 기본이고, 교내외 해커톤이나 탐구 대회 수상 경력이 대입과 취업 모두에서 강력한 무기가 됩니다.",
   },
   A: {
-    summary:
-      "감각적인 **예술형(A)** 재능이 뛰어나, 남들과 다른 창의적인 아이디어를 내는 **크리에이터/디자이너** 기질이 있습니다.",
-    roadmap:
-      "디자인/콘텐츠 특성화고 진학 후 **GTQ 1급** 및 포트폴리오를 1학년부터 준비하면 홍대/한예종 진학 가능성이 열립니다.",
+    keywords: ["#창의력_대장", "#감성_천재", "#트렌드_리더"],
+    strength:
+      "**예술형(A)**인 당신은 남들과 똑같은 것을 가장 싫어합니다. 풍부한 상상력과 독창적인 표현력은 AI도 따라올 수 없는 당신만의 경쟁력입니다. 당신의 아이디어는 세상을 더 다채롭게 만드는 힘이 있습니다.",
+    study:
+      "틀에 박힌 시간표는 숨이 막힐 수 있어요. **자유로운 분위기**에서 시각적인 자료(영상, 그림)를 활용해 공부하세요. 좋아하는 음악을 들으며 공부하거나 마인드맵을 그리며 내용을 구조화하는 것이 효과적입니다.",
+    strategy:
+      "성적보다 중요한 건 **'나만의 포트폴리오'**입니다. 디자인/콘텐츠 고교 진학 후 **GTQ 1급**, **컴퓨터그래픽스운용기능사**를 따고, SNS나 블로그에 꾸준히 작업물을 업로드하여 '나'라는 브랜드를 만드세요.",
   },
   S: {
-    summary:
-      "공감 능력이 좋은 **사회형(S)** 성향이 높아, 타인의 감정을 이해하고 돕는 **보건/상담/교육** 분야에서 빛을 발합니다.",
-    roadmap:
-      "보건/관광 특성화고 진학 후 **간호조무사** 또는 **관광통역안내사** 자격을 준비하면 병원 및 공공기관 취업이 유리합니다.",
+    keywords: ["#인간_비타민", "#소통_능력자", "#공감_만렙"],
+    strength:
+      "**사회형(S)**인 당신은 사람의 마음을 움직이는 힘이 있습니다. 친구의 고민을 잘 들어주고 갈등을 중재하는 능력은, 모든 기업이 탐내는 **최고의 커뮤니케이션 스킬**입니다. 혼자보다 '함께'할 때 더 빛나는 사람입니다.",
+    study:
+      "혼자 공부하면 외롭고 지루함을 느낍니다. **스터디 그룹**을 만들어 친구들에게 내용을 설명해주며 공부해보세요. 남을 가르칠 때 자신이 가장 많이 배우는 타입입니다.",
+    strategy:
+      "보건/관광/복지 특성화고에서 **봉사 활동** 시간을 꽉 채우세요. **간호조무사**나 **서비스 경영 자격(SMAT)** 취득은 물론, 학생회나 또래 상담부 활동을 통해 리더십 스토리를 만드는 것이 합격의 지름길입니다.",
   },
   E: {
-    summary:
-      "추진력 있는 **진취형(E)** 리더십이 강해, 조직을 이끌고 목표를 달성하는 **CEO/마케터** 기질을 타고났습니다.",
-    roadmap:
-      "상업/경영 고교 진학 후 **전산회계** 자격증과 **학생회장** 활동을 병행하면 금융권 및 공기업 고졸 공채 합격 전략이 완성됩니다.",
+    keywords: ["#야망가", "#리더십", "#설득의_달인"],
+    strength:
+      "**진취형(E)**인 당신은 목표가 생기면 무섭게 돌진하는 불도저입니다. 사람들을 설득해 내 편으로 만들고 조직을 이끄는 카리스마가 있죠. 창업가나 CEO가 되어 **세상을 움직일 잠재력**을 가지고 있습니다.",
+    study:
+      "선의의 경쟁자가 있을 때 불타오릅니다! 친구와 **내기 공부**를 하거나, 구체적인 목표 점수를 벽에 붙여두세요. 발표 수업이나 토론 수업에 적극 참여하면 수행평가 점수를 쓸어담을 수 있습니다.",
+    strategy:
+      "상업/경영 고교에서 **창업 동아리** 활동을 꼭 하세요. **전산회계/세무** 자격증으로 전문성을 갖추고, 모의 투자 대회나 창업 경진대회에 나가서 '도전하고 성취한 경험'을 자소서에 녹여내야 합니다.",
   },
   C: {
-    summary:
-      "꼼꼼한 **관습형(C)** 성향으로, 체계적이고 정확한 일 처리가 돋보이는 **금융/행정 전문가** 인재입니다.",
-    roadmap:
-      "세무/회계 특성화고 진학 후 **전산세무 2급**을 취득하면, 세무 공무원 및 대기업 재무팀 취업의 지름길이 열립니다.",
+    keywords: ["#인간_계산기", "#계획형_J", "#완벽주의"],
+    strength:
+      "**관습형(C)**인 당신은 빈틈없는 꼼꼼함의 소유자입니다. 규칙을 잘 지키고 자료를 체계적으로 정리하는 능력은 **금융, 회계, 행정** 분야에서 신뢰받는 최고의 인재상입니다. 실수를 모르는 완벽주의자죠.",
+    study:
+      "**플래너 활용**이 필수입니다. 시간 단위로 계획을 세우고 하나씩 지워나가는 과정에서 성취감을 느낍니다. 오답 노트를 꼼꼼히 정리하여 같은 실수를 반복하지 않는 것이 고득점 비결입니다.",
+    strategy:
+      "금융/세무 특성화고 진학 후 **전산세무 2급**, **ERP 정보관리사** 자격증을 단계별로 취득하세요. 성실함이 가장 큰 무기이므로 **3년 개근**과 꼼꼼한 내신 관리가 공공기관/은행권 취업의 열쇠입니다.",
   },
 };
 
@@ -1040,40 +1061,89 @@ function ResultView({
         </div>
       )}
 
+      {/* 프리미엄 리포트 화면 (확장된 UI) */}
       {isPremiumMode && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md mt-6 bg-slate-900/80 border border-indigo-500/50 rounded-3xl p-6 shadow-2xl"
+          className="w-full max-w-md mt-6 bg-slate-900/90 border border-indigo-500/50 rounded-3xl p-6 shadow-2xl overflow-hidden relative"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-white">💎 정밀 성향 분석</h3>
-            <span className="text-xs text-indigo-400 border border-indigo-400/30 rounded-full px-2 py-1">
-              Premium
+          {/* 배경 장식 */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl -mr-10 -mt-10"></div>
+
+          <div className="flex items-center justify-between mb-6 relative z-10">
+            <h3 className="text-xl font-black text-white italic">
+              Premium Report
+            </h3>
+            <span className="text-[10px] font-bold text-indigo-300 border border-indigo-500/50 bg-indigo-500/10 rounded-full px-3 py-1">
+              정밀 진단 완료
             </span>
           </div>
 
-          <HexagonChart
-            scores={scores || { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 }}
-          />
+          {/* 1. 육각형 그래프 */}
+          <div className="mb-6 bg-white/5 rounded-2xl p-4 border border-white/5">
+            <HexagonChart
+              scores={scores || { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 }}
+            />
+          </div>
 
-          <div className="space-y-3 mt-4">
-            <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-              <h4 className="text-indigo-400 font-bold text-sm mb-1">
-                📈 분석 요약
-              </h4>
-              <p className="text-gray-300 text-xs leading-relaxed">
-                {formatText(PREMIUM_MESSAGES[resultType].summary)}
+          {/* 2. 핵심 키워드 태그 */}
+          <div className="flex gap-2 justify-center mb-6 flex-wrap">
+            {PREMIUM_MESSAGES[resultType].keywords.map((keyword, idx) => (
+              <span
+                key={idx}
+                className="px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-lg"
+              >
+                {keyword}
+              </span>
+            ))}
+          </div>
+
+          <div className="space-y-4 relative z-10">
+            {/* 3. 나의 숨겨진 무기 (Strength) */}
+            <div className="bg-gradient-to-br from-white/10 to-white/5 p-4 rounded-2xl border border-white/10">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">🗡️</span>
+                <h4 className="text-indigo-300 font-bold text-sm">
+                  나의 숨겨진 무기
+                </h4>
+              </div>
+              <p className="text-gray-200 text-xs leading-relaxed text-justify">
+                {formatText(PREMIUM_MESSAGES[resultType].strength)}
               </p>
             </div>
-            <div className="bg-white/5 p-3 rounded-xl border border-white/10">
-              <h4 className="text-indigo-400 font-bold text-sm mb-1">
-                🎓 추천 로드맵
-              </h4>
-              <p className="text-gray-300 text-xs leading-relaxed">
-                {formatText(PREMIUM_MESSAGES[resultType].roadmap)}
+
+            {/* 4. 맞춤 공부법 (Study) */}
+            <div className="bg-gradient-to-br from-white/10 to-white/5 p-4 rounded-2xl border border-white/10">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">📚</span>
+                <h4 className="text-indigo-300 font-bold text-sm">
+                  성향 맞춤 공부법
+                </h4>
+              </div>
+              <p className="text-gray-200 text-xs leading-relaxed text-justify">
+                {formatText(PREMIUM_MESSAGES[resultType].study)}
               </p>
             </div>
+
+            {/* 5. 필살기 스펙 전략 (Strategy) */}
+            <div className="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 p-4 rounded-2xl border border-indigo-500/30">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">🏆</span>
+                <h4 className="text-indigo-300 font-bold text-sm">
+                  고교 3년 필살기 전략
+                </h4>
+              </div>
+              <p className="text-gray-200 text-xs leading-relaxed text-justify">
+                {formatText(PREMIUM_MESSAGES[resultType].strategy)}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-[10px] text-gray-500">
+              * 이 리포트는 AI 빅데이터 분석을 기반으로 생성되었습니다.
+            </p>
           </div>
         </motion.div>
       )}
