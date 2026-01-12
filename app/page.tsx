@@ -20,8 +20,13 @@ import {
   Briefcase,
   GraduationCap,
   Lock,
+  Copy,
+  Instagram,
+  MessageCircle,
+  Image as ImageIcon,
 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import html2canvas from "html2canvas";
 import {
   questionBank,
   type HollandType,
@@ -712,6 +717,8 @@ function ResultView({
   const [showToast, setShowToast] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(initialUnlocked);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   if (!data) return null;
 
@@ -757,8 +764,12 @@ function ResultView({
         alert("데이터는 저장되었으나 문자 발송에 일시적인 문제가 있습니다.");
       }
       setIsUnlocked(true);
+      setShowSuccessPopup(true);
     } catch (error) {
-      console.error(error);
+      console.error(
+        "사전 예약 저장 오류:",
+        error instanceof Error ? error.message : String(error)
+      );
       let msg = "오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
       if (typeof error === "object" && error !== null && "code" in error) {
         if ((error as any).code === "23505") {
@@ -771,24 +782,98 @@ function ResultView({
     }
   };
 
-  const handleShare = async () => {
+  const getShareUrl = () => {
     let shareUrl = window.location.href;
     if (!shareUrl.includes("type=")) {
       shareUrl = `${window.location.origin}${window.location.pathname}?type=${resultType}`;
     }
+    return shareUrl;
+  };
+
+  const handleShare = async () => {
+    const shareUrl = getShareUrl();
     const shareData = {
       title: `나는 ${data.title}!`,
       text: `${data.desc} ${data.title} ${data.emoji}\n나의 숨겨진 재능을 찾아보세요!`,
       url: shareUrl,
     };
-    try {
-      if (navigator.share) await navigator.share(shareData);
-      else {
-        await navigator.clipboard.writeText(shareUrl);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 3000);
+
+    // 모바일이거나 navigator.share가 지원되는 경우
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // 사용자가 공유를 취소한 경우는 무시
+        if ((err as Error).name !== "AbortError") {
+          console.error("공유 실패:", err);
+        }
       }
-    } catch (err) {}
+    } else {
+      // PC 또는 navigator.share가 지원되지 않는 경우 공유 모달 표시
+      setShowShareModal(true);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    const shareUrl = getShareUrl();
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      setShowShareModal(false);
+    } catch (err) {
+      console.error("링크 복사 실패:", err);
+      alert("링크 복사에 실패했습니다.");
+    }
+  };
+
+  const handleKakaoShare = () => {
+    const shareUrl = getShareUrl();
+    const shareText = `${data.desc} ${data.title} ${data.emoji}\n나의 숨겨진 재능을 찾아보세요!`;
+
+    // 카카오톡 링크 공유 (카카오톡이 설치되어 있으면 앱으로, 없으면 웹으로)
+    const kakaoUrl = `https://story.kakao.com/share?url=${encodeURIComponent(
+      shareUrl
+    )}`;
+    window.open(kakaoUrl, "_blank");
+  };
+
+  const handleSaveImage = async () => {
+    try {
+      // 결과 영역을 찾아서 캡처
+      const resultElement = document.querySelector(
+        "[data-result-content]"
+      ) as HTMLElement;
+      if (!resultElement) {
+        alert("결과 영역을 찾을 수 없습니다.");
+        return;
+      }
+
+      const canvas = await html2canvas(resultElement, {
+        backgroundColor: "#020617", // slate-950 배경색
+        scale: 2, // 고해상도
+        useCORS: true,
+      });
+
+      // 이미지 다운로드
+      const link = document.createElement("a");
+      link.download = `kkokgo_${data.title}_${resultType}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      setShowShareModal(false);
+    } catch (err) {
+      console.error("이미지 저장 실패:", err);
+      alert("이미지 저장에 실패했습니다.");
+    }
+  };
+
+  const handleInstagramInfo = () => {
+    alert(
+      "💡 인스타그램 공유 방법\n\n1. 위의 '이미지 저장' 버튼을 눌러 결과 이미지를 저장하세요.\n2. 인스타그램 앱을 열고 스토리 또는 게시물을 만드세요.\n3. 저장한 이미지를 선택하여 업로드하세요!\n\n✨ 멋진 결과를 친구들과 공유해보세요!"
+    );
   };
 
   const handlePremiumClick = () => {
@@ -804,6 +889,7 @@ function ResultView({
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       className="min-h-full flex flex-col items-center justify-center p-4 sm:p-6 py-8"
+      data-result-content
     >
       <motion.div
         animate={{ rotate: [0, 5, -5, 0] }}
@@ -1158,6 +1244,133 @@ function ResultView({
             className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm sm:text-base z-50"
           >
             ✅ 링크가 복사되었습니다!
+          </motion.div>
+        )}
+        {showSuccessPopup && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowSuccessPopup(false)}
+          >
+            <motion.div
+              initial={{ y: 20 }}
+              animate={{ y: 0 }}
+              exit={{ y: 20 }}
+              className="bg-gradient-to-br from-lime-400/20 to-emerald-400/20 backdrop-blur-xl border border-lime-400/30 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", delay: 0.2 }}
+                  className="w-20 h-20 mx-auto mb-4 bg-lime-400/20 rounded-full flex items-center justify-center border-2 border-lime-400/50"
+                >
+                  <CheckCircle className="w-12 h-12 text-lime-400" />
+                </motion.div>
+                <h3 className="text-2xl sm:text-3xl font-black text-white mb-2">
+                  🎉 사전 예약 완료!
+                </h3>
+                <p className="text-gray-300 text-sm sm:text-base mb-6 leading-relaxed">
+                  AI가 분석한 맞춤 추천 학과가 모두 공개되었습니다.
+                  <br />
+                  <span className="text-lime-400 font-bold">
+                    문자 메시지로도 결과를 받아보세요!
+                  </span>
+                </p>
+                <button
+                  onClick={() => setShowSuccessPopup(false)}
+                  className="w-full py-4 bg-lime-400 text-black rounded-2xl font-black text-base sm:text-lg shadow-[0_0_20px_rgba(163,230,53,0.6)] hover:scale-105 transition-transform"
+                >
+                  확인
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+        {showShareModal && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowShareModal(false)}
+          >
+            <motion.div
+              initial={{ y: 20 }}
+              animate={{ y: 0 }}
+              exit={{ y: 20 }}
+              className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border border-white/20 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 헤더 */}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl sm:text-3xl font-black text-white">
+                  결과 공유하기
+                </h3>
+                <button
+                  onClick={() => setShowShareModal(false)}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6 text-gray-400" />
+                </button>
+              </div>
+
+              {/* 공유 버튼 그리드 */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* 링크 복사 */}
+                <button
+                  onClick={handleCopyLink}
+                  className="flex flex-col items-center justify-center gap-3 p-6 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all hover:scale-105 group"
+                >
+                  <div className="w-12 h-12 rounded-full bg-lime-400/20 flex items-center justify-center group-hover:bg-lime-400/30 transition-colors">
+                    <Copy className="w-6 h-6 text-lime-400" />
+                  </div>
+                  <span className="text-white font-bold text-sm">
+                    링크 복사
+                  </span>
+                </button>
+
+                {/* 카카오톡 */}
+                <button
+                  onClick={handleKakaoShare}
+                  className="flex flex-col items-center justify-center gap-3 p-6 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all hover:scale-105 group"
+                >
+                  <div className="w-12 h-12 rounded-full bg-yellow-400/20 flex items-center justify-center group-hover:bg-yellow-400/30 transition-colors">
+                    <MessageCircle className="w-6 h-6 text-yellow-400" />
+                  </div>
+                  <span className="text-white font-bold text-sm">카카오톡</span>
+                </button>
+
+                {/* 이미지 저장 */}
+                <button
+                  onClick={handleSaveImage}
+                  className="flex flex-col items-center justify-center gap-3 p-6 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all hover:scale-105 group"
+                >
+                  <div className="w-12 h-12 rounded-full bg-purple-400/20 flex items-center justify-center group-hover:bg-purple-400/30 transition-colors">
+                    <ImageIcon className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <span className="text-white font-bold text-sm">
+                    이미지 저장
+                  </span>
+                </button>
+
+                {/* 인스타그램 */}
+                <button
+                  onClick={handleInstagramInfo}
+                  className="flex flex-col items-center justify-center gap-3 p-6 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-all hover:scale-105 group"
+                >
+                  <div className="w-12 h-12 rounded-full bg-pink-400/20 flex items-center justify-center group-hover:bg-pink-400/30 transition-colors">
+                    <Instagram className="w-6 h-6 text-pink-400" />
+                  </div>
+                  <span className="text-white font-bold text-sm">
+                    인스타그램
+                  </span>
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
