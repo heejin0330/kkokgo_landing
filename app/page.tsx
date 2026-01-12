@@ -1,14 +1,211 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   motion,
   AnimatePresence,
   useMotionValue,
   useTransform,
+  type PanInfo,
 } from "framer-motion";
 import { Circle, X, Sparkles, TrendingUp, Phone, Share2 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+
+// ------------------------------------------------------------------
+// [0] TypeScript 타입 정의
+// ------------------------------------------------------------------
+type HollandType = "R" | "I" | "A" | "S" | "E" | "C";
+
+interface Question {
+  id: string;
+  type: HollandType;
+  text: string;
+}
+
+type ScoreType = Record<HollandType, number>;
+
+interface ResultStats {
+  employmentRate: string;
+  companies: string;
+  salary: string;
+}
+
+interface ResultReport {
+  recommendSchool: string;
+  ncsField: string;
+  stats: ResultStats;
+  manual: string;
+}
+
+interface ResultDataType {
+  type: string;
+  title: string;
+  emoji: string;
+  desc: string;
+  majors: string[];
+  report: ResultReport;
+}
+
+type ResultDataMap = Record<HollandType, ResultDataType>;
+
+interface UseTestLogicReturn {
+  questions: Question[];
+  currentIndex: number;
+  handleSwipe: (direction: string, questionType: HollandType) => void;
+  getResult: () => HollandType;
+  progress: number;
+}
+
+// page.tsx 상단 (컴포넌트 바깥)
+
+// 통합 결과 데이터 (RESULT_DATA)
+const RESULT_DATA: ResultDataMap = {
+  R: {
+    type: "실재형 (R)",
+    title: "마이더스의 손",
+    emoji: "🛠️",
+    desc: "손만 대면 고쳐내는 금손의 소유자!",
+    majors: [
+      "🚁 드론공간정보과",
+      "🔧 기계설계과",
+      "🤖 로봇제어과",
+      "⚙️ 정밀기계과",
+      "✈️ 항공정비과",
+    ],
+    report: {
+      recommendSchool: "수도전기공업고등학교",
+      ncsField: "에너지·기계 직무",
+      stats: {
+        employmentRate: "97.7%",
+        companies: "한국전력, 삼성전자, 현대차",
+        salary: "초봉 4,000만원↑ (공기업 기준)",
+      },
+      manual:
+        "이론 공부보다 실습이 훨씬 재밌죠? 마이스터고 가면 내신 5등급도 대기업 기술직으로 골인할 수 있습니다.",
+    },
+  },
+  I: {
+    type: "탐구형 (I)",
+    title: "천재 해커",
+    emoji: "💻",
+    desc: "10시간 걸릴 일을 10분 컷하는 효율맨!",
+    majors: [
+      "💻 소프트웨어과",
+      "🔋 이차전지과",
+      "🛡️ 정보보호과",
+      "🧠 인공지능과",
+      "💊 바이오제약과",
+    ],
+    report: {
+      recommendSchool: "대덕소프트웨어마이스터고",
+      ncsField: "정보통신·SW 직무",
+      stats: {
+        employmentRate: "92.1%",
+        companies: "토스(Toss), 배민, 금융감독원",
+        salary: "개발자 초봉 5,000만원↑",
+      },
+      manual:
+        "애매한 대학 컴공과보다 낫습니다. 졸업과 동시에 '네카라쿠배' 개발자로 취업하거나 SKY 대학으로 진학하는 케이스가 많아요.",
+    },
+  },
+  A: {
+    type: "예술형 (A)",
+    title: "트렌드 세터",
+    emoji: "🎨",
+    desc: "숨만 쉬어도 힙한 감각적인 아티스트!",
+    majors: [
+      "🎨 웹툰창작과",
+      "🎤 K-POP콘텐츠과",
+      "🖌️ 시각디자인과",
+      "🎮 게임그래픽과",
+      "🏠 실내건축과",
+    ],
+    report: {
+      recommendSchool: "한국애니메이션고등학교",
+      ncsField: "디자인·문화콘텐츠 직무",
+      stats: {
+        employmentRate: "진학률 85%↑",
+        companies: "네이버웹툰, 한예종/홍익대 진학",
+        salary: "업계 탑티어 포트폴리오 완성",
+      },
+      manual:
+        "입시 미술 하느라 돈 쓰는 대신, 학교에서 웹툰 그리고 게임 만들면서 바로 프로 데뷔 준비하세요.",
+    },
+  },
+  S: {
+    type: "사회형 (S)",
+    title: "핵인싸 아이돌",
+    emoji: "💖",
+    desc: "어딜 가나 사랑받는 분위기 메이커!",
+    majors: [
+      "🚑 응급구조과",
+      "👶 유아교육과",
+      "💉 보건간호과",
+      "🏛️ 공공행정과",
+      "✈️ 관광경영과",
+    ],
+    report: {
+      recommendSchool: "서울관광고등학교",
+      ncsField: "보건·복지·서비스 직무",
+      stats: {
+        employmentRate: "공무원 합격 다수",
+        companies: "9급 공무원, 대학병원, 호텔리어",
+        salary: "안정적인 공무원 연금 확보",
+      },
+      manual:
+        "남들 공무원 시험 준비할 때, 특성화고 특채로 20살에 9급 공무원 되는 지름길이 있습니다.",
+    },
+  },
+  E: {
+    type: "진취형 (E)",
+    title: "영앤리치 CEO",
+    emoji: "👑",
+    desc: "떡잎부터 남다른 야망가!",
+    majors: [
+      "📈 금융경영과",
+      "📹 1인크리에이터과",
+      "💰 금융회계과",
+      "🛍️ 라이브커머스과",
+      "📢 마케팅과",
+    ],
+    report: {
+      recommendSchool: "서울여자상업고등학교",
+      ncsField: "경영·금융 직무",
+      stats: {
+        employmentRate: "100% (취업희망자)",
+        companies: "한국은행, 금감원, 5대 시중은행",
+        salary: "금융권 초봉 5,000만원↑",
+      },
+      manual:
+        "인서울 상경계열 나와도 힘든 '금융권 A매치' 공기업 취업, 여기선 학교 추천으로 갑니다.",
+    },
+  },
+  C: {
+    type: "관습형 (C)",
+    title: "인간 AI",
+    emoji: "🤖",
+    desc: "실수란 없다, 걸어 다니는 계산기!",
+    majors: [
+      "📊 금융빅데이터과",
+      "🏢 세무행정과",
+      "📦 스마트물류과",
+      "📂 공공사무행정과",
+      "🧾 세무회계과",
+    ],
+    report: {
+      recommendSchool: "선린인터넷고등학교",
+      ncsField: "경영지원·사무행정 직무",
+      stats: {
+        employmentRate: "대입/취업 선택형",
+        companies: "공공기관, 대기업 재무팀",
+        salary: "안정성 끝판왕 직무",
+      },
+      manual:
+        "숫자에 밝고 정리를 잘하나요? 기업의 안살림을 책임지는 핵심 인재로 모셔갑니다.",
+    },
+  },
+};
+
 // 팩맨 프로그레스 바 컴포넌트
 const PacmanProgress = ({
   current,
@@ -70,106 +267,25 @@ const PacmanProgress = ({
     </div>
   );
 };
-// page.tsx 상단 (컴포넌트 바깥)
-
-const TYPE_DETAILS = {
-  R: {
-    // 현실형 (엔지니어/기계)
-    title: "현실형 (Realistic)",
-    desc: "손재주가 좋고 기계를 다루는 데 천부적인 재능이 있어요.",
-    hiddenMajors: ["로봇제어과 🤖", "정밀기계과 ⚙️", "항공정비과 ✈️"],
-    recommendSchool: "수도전기공업고등학교", // 에너지 분야 탑티어
-    schoolStats: {
-      employmentRate: "97.7%",
-      keyCompanys: ["한국전력공사", "삼성전자", "현대자동차"],
-      avgSalary: "초봉 4,000만원↑ (공기업 기준)",
-    },
-    manual:
-      "이론 공부보다 실습이 훨씬 재밌죠? 마이스터고 가면 내신 5등급도 대기업 기술직으로 골인할 수 있습니다.",
-  },
-  I: {
-    // 탐구형 (IT/해커)
-    title: "탐구형 (Investigative)",
-    desc: "원리를 파고드는 분석가! 남들이 못 보는 버그를 찾아냅니다.",
-    hiddenMajors: ["소프트웨어개발과 💻", "정보보호과 🛡️", "인공지능과 🧠"],
-    recommendSchool: "대덕소프트웨어마이스터고", // SW 탑티어
-    schoolStats: {
-      employmentRate: "92.1%",
-      keyCompanys: ["토스(Toss)", "배달의민족", "금융감독원"],
-      avgSalary: "개발자 초봉 5,000만원↑",
-    },
-    manual:
-      "애매한 대학 컴공과보다 낫습니다. 졸업과 동시에 '네카라쿠배' 개발자로 취업하거나 SKY 대학으로 진학하는 케이스가 많아요.",
-  },
-  A: {
-    // 예술형 (디자인/웹툰)
-    title: "예술형 (Artistic)",
-    desc: "상상력이 풍부하고 나만의 개성을 표현하는 크리에이터!",
-    hiddenMajors: ["웹툰창작과 🎨", "시각디자인과 🖌️", "게임그래픽과 🎮"],
-    recommendSchool: "한국애니메이션고등학교", // 예체능 탑티어
-    schoolStats: {
-      employmentRate: "진학률 85%↑", // 예술계는 진학률이 중요
-      keyCompanys: ["네이버웹툰", "한예종/홍익대 진학", "게임사 아트팀"],
-      avgSalary: "업계 탑티어 포트폴리오 완성",
-    },
-    manual:
-      "입시 미술 하느라 돈 쓰는 대신, 학교에서 웹툰 그리고 게임 만들면서 바로 프로 데뷔 준비하세요.",
-  },
-  S: {
-    // 사회형 (보건/서비스)
-    title: "사회형 (Social)",
-    desc: "사람을 돕고 가르치는 데서 보람을 느끼는 천사표 리더!",
-    hiddenMajors: ["보건간호과 💉", "공공행정과 🏛️", "관광경영과 ✈️"],
-    recommendSchool: "서울관광고등학교", // 서비스 탑티어
-    schoolStats: {
-      employmentRate: "공무원 합격 다수",
-      keyCompanys: ["9급 공무원", "대학병원 간호조무사", "호텔리어"],
-      avgSalary: "안정적인 공무원 연금 확보",
-    },
-    manual:
-      "남들 공무원 시험 준비할 때, 특성화고 특채로 20살에 9급 공무원 되는 지름길이 있습니다.",
-  },
-  E: {
-    // 진취형 (금융/CEO)
-    title: "진취형 (Enterprising)",
-    desc: "설득하고 리드하는 야망가! 돈의 흐름을 읽는 눈이 있습니다.",
-    hiddenMajors: ["금융회계과 💰", "창업경영과 📈", "마케팅과 📢"],
-    recommendSchool: "서울여자상업고등학교", // 금융권 탑티어
-    schoolStats: {
-      employmentRate: "100% (취업희망자)",
-      keyCompanys: ["한국은행", "금융감독원", "시중 5대 은행"],
-      avgSalary: "금융권 초봉 5,000만원↑",
-    },
-    manual:
-      "인서울 상경계열 나와도 힘든 '금융권 A매치' 공기업 취업, 여기선 학교 추천으로 갑니다.",
-  },
-  C: {
-    // 관습형 (사무/행정)
-    title: "관습형 (Conventional)",
-    desc: "꼼꼼함의 대명사! 계획대로 척척 처리하는 완벽주의자.",
-    hiddenMajors: ["스마트물류과 📦", "공공사무행정과 📂", "세무회계과 🧾"],
-    recommendSchool: "선린인터넷고등학교", // IT+경영 융합
-    schoolStats: {
-      employmentRate: "대입/취업 선택형",
-      keyCompanys: ["공공기관 사무직", "대기업 재무팀", "세무공무원"],
-      avgSalary: "안정성 끝판왕 직무",
-    },
-    manual:
-      "숫자에 밝고 정리를 잘하나요? 기업의 안살림을 책임지는 핵심 인재로 모셔갑니다.",
-  },
-};
 
 // ------------------------------------------------------------------
 // [1] Supabase 클라이언트 설정
 // ------------------------------------------------------------------
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    "Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"
+  );
+}
+
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ------------------------------------------------------------------
 // [2] 데이터 및 상수 정의
 // ------------------------------------------------------------------
-const questionBank = [
+const questionBank: Question[] = [
   {
     id: "R_01",
     type: "R",
@@ -472,72 +588,9 @@ const questionBank = [
   },
 ];
 
-const resultMapping: any = {
-  R: { title: "마이더스의 손", emoji: "🛠️", desc: "손만 대면 고쳐내는" },
-  I: { title: "천재 해커", emoji: "💻", desc: "10시간 걸릴 일을 10분 컷!" },
-  A: { title: "트렌드 세터", emoji: "🎨", desc: "숨만 쉬어도 힙한" },
-  S: { title: "핵인싸 아이돌", emoji: "💖", desc: "어딜 가나 사랑받는" },
-  E: { title: "영앤리치 CEO", emoji: "👑", desc: "떡잎부터 남다른" },
-  C: { title: "인간 AI", emoji: "🤖", desc: "실수란 없다, 걸어 다니는" },
-};
-
-const hollandTypes: any = {
-  R: "실재형",
-  I: "탐구형",
-  A: "예술형",
-  S: "사회형",
-  E: "진취형",
-  C: "관습형",
-};
-
-const recommendMajors: any = {
-  R: [
-    "🚁 드론공간정보과",
-    "🐴 말산업육성과",
-    "🏭 스마트팩토리과",
-    "🔧 기계과",
-    "⚡ 전기과",
-  ],
-  I: [
-    "💾 AI해킹보안과",
-    "🔋 이차전지과",
-    "💊 바이오제약과",
-    "💻 소프트웨어과",
-    "🧪 화학공업과",
-  ],
-  A: [
-    "🎤 K-POP콘텐츠과",
-    "🎨 웹툰창작과",
-    "💅 방송분장과",
-    "🖌️ 시각디자인과",
-    "🏠 실내건축과",
-  ],
-  S: [
-    "🐶 반려동물케어과",
-    "☕ 카페디저트과",
-    "🚑 응급구조과",
-    "💉 보건간호과",
-    "👶 유아교육과",
-  ],
-  E: [
-    "📹 1인크리에이터과",
-    "🛍️ 라이브커머스과",
-    "⛳ 레저골프경기과",
-    "📈 금융경영과",
-    "✈️ 관광경영과",
-  ],
-  C: [
-    "📦 스마트물류과",
-    "👮 공공행정과",
-    "📊 금융빅데이터과",
-    "💰 회계정보과",
-    "🏢 세무행정과",
-  ],
-};
-
-function getRandomMajors(type: string, count = 2) {
-  const majors = [...recommendMajors[type]];
-  const selected = [];
+function getRandomMajors(type: HollandType, count = 2): string[] {
+  const majors = [...RESULT_DATA[type].majors];
+  const selected: string[] = [];
   for (let i = 0; i < count && majors.length > 0; i++) {
     const randomIndex = Math.floor(Math.random() * majors.length);
     selected.push(majors.splice(randomIndex, 1)[0]);
@@ -554,10 +607,10 @@ const loadingMessages = [
 // ------------------------------------------------------------------
 // [3] Hook: 테스트 로직
 // ------------------------------------------------------------------
-function useTestLogic() {
-  const [questions, setQuestions] = useState<any[]>([]);
+function useTestLogic(): UseTestLogicReturn {
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [scores, setScores] = useState<any>({
+  const [scores, setScores] = useState<ScoreType>({
     R: 0,
     I: 0,
     A: 0,
@@ -568,8 +621,8 @@ function useTestLogic() {
   const [startTime, setStartTime] = useState<number | null>(null);
 
   useEffect(() => {
-    const types = ["R", "I", "A", "S", "E", "C"];
-    const selected: any[] = [];
+    const types: HollandType[] = ["R", "I", "A", "S", "E", "C"];
+    const selected: Question[] = [];
     types.forEach((type) => {
       const filtered = questionBank.filter((q) => q.type === type);
       const shuffled = [...filtered].sort(() => Math.random() - 0.5);
@@ -578,11 +631,11 @@ function useTestLogic() {
     setQuestions(selected.sort(() => Math.random() - 0.5));
   }, []);
 
-  const handleSwipe = (direction: string, questionType: string) => {
+  const handleSwipe = (direction: string, questionType: HollandType) => {
     if (direction === "right") {
       const elapsed = Date.now() - (startTime || Date.now());
       const points = elapsed < 2000 ? 1.5 : 1;
-      setScores((prev: any) => ({
+      setScores((prev) => ({
         ...prev,
         [questionType]: prev[questionType] + points,
       }));
@@ -593,8 +646,8 @@ function useTestLogic() {
     }
   };
 
-  const getResult = () => {
-    const entries = Object.entries(scores) as [string, number][];
+  const getResult = (): HollandType => {
+    const entries = Object.entries(scores) as [HollandType, number][];
     const maxScore = Math.max(...entries.map(([, score]) => score));
     const winners = entries.filter(([, score]) => score === maxScore);
     const [type] = winners[Math.floor(Math.random() * winners.length)];
@@ -704,14 +757,17 @@ function SwipeCard({
   question,
   onSwipe,
 }: {
-  question: any;
+  question: Question;
   onSwipe: (dir: string) => void;
 }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
 
-  const handleDragEnd = (_: any, info: any) => {
+  const handleDragEnd = (
+    _: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => {
     if (Math.abs(info.offset.x) > 100) {
       onSwipe(info.offset.x > 0 ? "right" : "left");
     }
@@ -724,6 +780,8 @@ function SwipeCard({
       onDragEnd={handleDragEnd}
       style={{ x, rotate, opacity }}
       className="absolute w-full max-w-sm"
+      role="region"
+      aria-label={`질문: ${question.text}`}
     >
       <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
         <div className="text-5xl sm:text-6xl mb-4 sm:mb-6 text-center">🤔</div>
@@ -739,48 +797,143 @@ function ResultView({
   resultType,
   onRestart,
 }: {
-  resultType: string;
+  resultType: HollandType;
   onRestart: () => void;
 }) {
+  // 1. 통합 데이터에서 가져오기
+  const data = RESULT_DATA[resultType];
+
+  // 2. 랜덤으로 2개 선택 (기존 방식 유지)
+  const [selectedMajors] = useState(() => getRandomMajors(resultType, 2));
+
+  // [2] 상태 관리 추가 (전화번호 + 동의 여부)
   const [phone, setPhone] = useState("");
+  const [privacyConsent, setPrivacyConsent] = useState(false); // 필수 동의
+  const [marketingConsent, setMarketingConsent] = useState(false); // 선택 동의
+
   const [showToast, setShowToast] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const result = resultMapping[resultType];
-  const [selectedMajors] = useState(() => getRandomMajors(resultType, 2));
 
-  // 유효성 검사 및 저장
-  const handlePreOrder = async () => {
-    if (!phone || phone.trim().length < 10) {
-      alert("올바른 전화번호를 입력해주세요.");
+  // [3] 잠금 해제 및 리포트 전송 로직
+  const [isUnlocked, setIsUnlocked] = useState(false);
+
+  const handleUnlock = async () => {
+    // 1. 유효성 검사
+    if (!privacyConsent) {
+      alert("상세 리포트 전송을 위해 [필수] 동의가 필요합니다.");
+      return;
+    }
+
+    // 전화번호 유효성 검증 강화
+    const phoneRegex = /^01[0-9]-?\d{4}-?\d{4}$/;
+    const cleanPhone = phone.replace(/-/g, "");
+    if (
+      !phone ||
+      !phoneRegex.test(cleanPhone) ||
+      cleanPhone.length < 10 ||
+      cleanPhone.length > 11
+    ) {
+      alert("올바른 휴대폰 번호 형식이 아닙니다. (010-1234-5678 형식)");
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // 2. Supabase에 데이터 저장 (DB)
+      // 추천된 학과를 텍스트로 변환 (2개 학과를 쉼표로 구분)
       const majorText = selectedMajors.join(", ");
+
       const { error } = await supabase.from("pre_orders").insert([
         {
-          phone: phone.trim(),
+          phone: cleanPhone,
           major: majorText,
+          result_type: resultType,
+          marketing_consent: marketingConsent,
           created_at: new Date().toISOString(),
         },
       ]);
 
       if (error) throw error;
 
-      setShowSuccessPopup(true);
-      setPhone("");
+      // 3. [핵심] 실제 문자 발송 API 호출 🚀
+      // 현재 페이지 주소를 링크로 보냄 (나중에 공유 기능 구현 시 쿼리 파라미터 처리 필요)
+      const currentUrl = window.location.href;
+
+      const smsResponse = await fetch("/api/sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: cleanPhone,
+          resultType: resultType,
+          resultTitle: data.title, // 예: "천재 해커"
+          resultUrl: currentUrl, // 결과 페이지 링크
+        }),
+      });
+
+      if (!smsResponse.ok) {
+        const errorText = await smsResponse.text();
+        console.error(
+          "문자 발송 API 응답 에러:",
+          smsResponse.status,
+          errorText
+        );
+        alert(
+          "데이터는 저장되었으나 문자 발송에 실패했습니다. (발신번호 등록 확인 필요)"
+        );
+      } else {
+        const smsResult = await smsResponse.json();
+
+        if (!smsResult.success) {
+          console.error("문자 발송 에러:", smsResult.error);
+          // 문자는 실패했어도 화면은 보여줄지, 에러를 띄울지 결정
+          // 여기서는 일단 화면은 보여주되 경고창을 띄우는 방식
+          alert(
+            "데이터는 저장되었으나 문자 발송에 실패했습니다. (발신번호 등록 확인 필요)"
+          );
+        } else {
+          alert(
+            `📩 [발송 완료] ${cleanPhone} 번호로\n결과 리포트 링크가 전송되었습니다!`
+          );
+        }
+      }
+
+      // 4. 화면 잠금 해제
+      setIsUnlocked(true);
     } catch (error) {
       // 에러 상세 정보를 확인하기 위한 개선된 로깅
       console.error(
-        "데이터 저장 오류:",
+        "저장 실패:",
         error instanceof Error ? error.message : JSON.stringify(error, null, 2)
       );
-      if (error && typeof error === "object" && "message" in error) {
-        console.error("Supabase 에러 메시지:", (error as any).message);
+      if (error && typeof error === "object") {
+        const errorObj = error as any;
+        if (errorObj.message) {
+          console.error("에러 메시지:", errorObj.message);
+        }
+        if (errorObj.code) {
+          console.error("에러 코드:", errorObj.code);
+        }
       }
-      alert("오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+
+      let errorMessage = "오류가 발생했습니다. 다시 시도해주세요.";
+
+      if (error && typeof error === "object") {
+        const errorObj = error as any;
+        const errorString = JSON.stringify(errorObj).toLowerCase();
+
+        // PostgreSQL unique constraint violation (code: 23505) 또는 중복 키 에러
+        if (
+          errorObj.code === "23505" ||
+          errorString.includes("duplicate") ||
+          errorString.includes("already exists")
+        ) {
+          errorMessage =
+            "이미 등록된 전화번호입니다. 다른 번호를 입력해주세요.";
+        }
+      }
+
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -788,8 +941,8 @@ function ResultView({
 
   const handleShare = async () => {
     const shareData = {
-      title: `나는 ${result.title}!`,
-      text: `${result.desc} ${result.title} ${result.emoji}\n나의 숨겨진 재능을 찾아보세요!`,
+      title: `나는 ${data.title}!`,
+      text: `${data.desc} ${data.title} ${data.emoji}\n나의 숨겨진 재능을 찾아보세요!`,
       url: window.location.href,
     };
     try {
@@ -816,17 +969,17 @@ function ResultView({
         transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
         className="text-6xl sm:text-7xl md:text-8xl mb-4 sm:mb-6"
       >
-        {result.emoji}
+        {data.emoji}
       </motion.div>
 
       <h2 className="text-xl sm:text-2xl font-bold text-gray-300 mb-1 sm:mb-2">
-        {result.desc}
+        {data.desc}
       </h2>
       <span className="text-lime-400 text-xs font-bold border border-lime-400/30 rounded-full px-3 py-1 mb-2">
-        TYPE {resultType} : {hollandTypes[resultType]}
+        TYPE {resultType} : {data.type}
       </span>
       <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-6 sm:mb-8 text-white">
-        {result.title}
+        {data.title}
       </h1>
 
       <div className="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-4 sm:p-5 mb-3 sm:mb-4 shadow-2xl">
@@ -889,14 +1042,99 @@ function ResultView({
               onChange={(e) => setPhone(e.target.value)}
               placeholder="010-0000-0000"
               className="w-full pl-9 sm:pl-10 pr-4 py-3 sm:py-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder-gray-400 font-bold text-base sm:text-lg focus:outline-none focus:border-lime-400"
+              aria-label="휴대폰 번호 입력"
             />
           </div>
         </div>
 
+        {/* ▼▼▼ [추가된 부분] 약관 동의 및 체크박스 영역 ▼▼▼ */}
+        <div className="mt-4 mb-4 px-1 space-y-3">
+          {/* 1. [필수] 개인정보 수집 및 이용 동의 */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-start gap-2">
+              <div className="flex items-center h-5">
+                <input
+                  id="privacy-consent"
+                  type="checkbox"
+                  checked={privacyConsent}
+                  onChange={(e) => setPrivacyConsent(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-lime-400 focus:ring-lime-400 bg-white/10"
+                />
+              </div>
+              <label
+                htmlFor="privacy-consent"
+                className="text-sm font-medium text-white cursor-pointer select-none"
+              >
+                [필수] 개인정보 수집 및 이용 동의
+              </label>
+            </div>
+
+            <details className="ml-6 text-[11px] text-gray-400 cursor-pointer">
+              <summary className="hover:text-gray-300 underline underline-offset-2">
+                약관 전체 보기 🔽
+              </summary>
+              <div className="p-3 mt-2 bg-black/40 rounded-xl border border-white/10 leading-relaxed text-left h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600">
+                <p className="font-bold text-gray-300 mb-1">
+                  [개인정보 수집 및 이용 동의]
+                </p>
+                1. 목적: 진로 분석 결과 발송 및 상담, 서비스 이용 확인
+                <br />
+                2. 항목: 휴대전화번호, 검사 결과 데이터
+                <br />
+                3. 기간: <strong>서비스 종료 또는 동의 철회 시까지</strong>
+                <br />
+                4. 권리: 동의를 거부할 수 있으나, 거부 시 결과 발송이
+                불가합니다.
+                <br />
+                <br />
+                <p className="font-bold text-gray-300 mb-1">[서비스 문의]</p>
+                PADA Labs (파다랩스) 개발팀
+                <br />
+                <a
+                  href="mailto:padalabs.dev@gmail.com"
+                  className="text-lime-400 hover:underline"
+                >
+                  padalabs.dev@gmail.com
+                </a>
+              </div>
+            </details>
+          </div>
+
+          {/* 2. [선택] 마케팅 정보 수신 동의 */}
+          <div className="flex items-start gap-2">
+            <div className="flex items-center h-5">
+              <input
+                id="marketing-consent"
+                type="checkbox"
+                checked={marketingConsent}
+                onChange={(e) => setMarketingConsent(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-lime-400 focus:ring-lime-400 bg-white/10"
+              />
+            </div>
+            <div className="text-xs sm:text-sm">
+              <label
+                htmlFor="marketing-consent"
+                className="font-medium text-gray-300 select-none cursor-pointer"
+              >
+                [선택] 정식 서비스 출시 알림 받기
+              </label>
+              <p className="text-gray-500 text-[10px] mt-0.5">
+                출시 시 가장 먼저 문자로 알려드리고,{" "}
+                <span className="text-lime-400">사전 예약 할인 혜택</span>을
+                드립니다.
+              </p>
+            </div>
+          </div>
+        </div>
+        {/* ▲▲▲ [추가된 부분 끝] ▲▲▲ */}
+
         <button
-          onClick={handlePreOrder}
+          onClick={handleUnlock}
           disabled={isSubmitting}
           className="w-full py-3 sm:py-4 bg-lime-400 text-black rounded-2xl font-black text-base sm:text-lg shadow-[0_0_20px_rgba(163,230,53,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label={
+            isSubmitting ? "저장 중입니다" : "맞춤형 입시 전략 리포트 받기"
+          }
         >
           {isSubmitting
             ? "저장 중..."
@@ -906,12 +1144,14 @@ function ResultView({
         <button
           onClick={handleShare}
           className="w-full mt-3 py-3 sm:py-4 bg-transparent border-2 border-white/30 hover:border-white/50 rounded-2xl text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-colors"
+          aria-label="친구에게 결과 공유하기"
         >
           <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
           친구에게 내 결과 자랑하기 🔗
         </button>
       </div>
 
+      {/* (아래 Toast, SuccessPopup 등 나머지 코드는 기존과 동일) */}
       <AnimatePresence>
         {showToast && (
           <motion.div
@@ -968,6 +1208,7 @@ function ResultView({
       <button
         onClick={onRestart}
         className="text-gray-400 underline font-bold text-base sm:text-lg hover:text-white transition-colors"
+        aria-label="테스트 다시 시작하기"
       >
         다시 테스트하기
       </button>
@@ -1008,7 +1249,8 @@ function AnalyzingView({ onComplete }: { onComplete: () => void }) {
       clearTimeout(timer2);
       clearTimeout(timer3);
     };
-  }, [onComplete]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // onComplete는 안정적인 함수이므로 의존성 배열에서 제외
 
   return (
     <motion.div
@@ -1085,6 +1327,11 @@ export default function Home() {
     if (currentQuestion) handleSwipe(answer, currentQuestion.type);
   };
 
+  // AnalyzingView의 onComplete를 useCallback으로 메모이제이션하여 메모리 누수 방지
+  const handleAnalyzingComplete = useCallback(() => {
+    setStage("result");
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-slate-950 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -1147,6 +1394,7 @@ export default function Home() {
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleAnswer("left")}
                     className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-red-500 to-rose-600 shadow-[0_0_20px_rgba(239,68,68,0.5)] flex items-center justify-center"
+                    aria-label="아니요"
                   >
                     <X
                       className="w-8 h-8 sm:w-10 sm:h-10 text-white"
@@ -1158,6 +1406,7 @@ export default function Home() {
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleAnswer("right")}
                     className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.6)] flex items-center justify-center"
+                    aria-label="예"
                   >
                     <Circle
                       className="w-8 h-8 sm:w-10 sm:h-10 text-black"
@@ -1176,7 +1425,7 @@ export default function Home() {
                 exit={{ opacity: 0 }}
                 className="flex-1 pt-14 sm:pt-16"
               >
-                <AnalyzingView onComplete={() => setStage("result")} />
+                <AnalyzingView onComplete={handleAnalyzingComplete} />
               </motion.div>
             )}
 
@@ -1192,7 +1441,7 @@ export default function Home() {
                   resultType={getResult()}
                   onRestart={() => {
                     setStage("start");
-                    window.location.reload();
+                    // window.location.reload() 제거: 상태만 리셋하면 useTestLogic 훅이 재호출되면서 자동으로 초기화됨
                   }}
                 />
               </motion.div>
