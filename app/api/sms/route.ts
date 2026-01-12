@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     // 보낼 메시지 내용 구성 (LMS: 장문 문자)
     const messageText = `[꼭고] 진로 분석 리포트 📩
 
-자녀분의 진로 유형:
+당신의 진로 유형:
 "${resultTitle}"
 
 상위 1% 마이스터고 추천 정보와
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 👇 리포트 확인하기
 ${shortLink}
 
-*무료 진단 요청에 의해 발송됨`;
+*무료 진단 요청에 의해 발송되었습니다.`;
 
     // 실제 발송 요청
     const response = await messageService.sendOne({
