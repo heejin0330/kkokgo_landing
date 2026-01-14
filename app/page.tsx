@@ -462,6 +462,35 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// ------------------------------------------------------------------
+// A/B 테스트 문구 버전 정의
+// ------------------------------------------------------------------
+const AB_VARIANTS = [
+  {
+    id: "A",
+    title1: "나에게 딱 맞는",
+    title2: "고등학교 학과 찾기",
+    subtitle1: "인문계? 특성화고? 내 적성은 어디일까?",
+    subtitle2: "(AI 진로 분석) 🔥",
+  },
+  {
+    id: "B",
+    title1: "3분 만에 밝혀지는",
+    title2: "나의 진짜 진로 유형",
+    subtitle1: "간단한 테스트로 숨겨진 적성을 발견해보세요",
+    subtitle2: "",
+  },
+];
+
+// A/B 테스트 클릭 기록 함수
+async function recordABTestClick(variant: string) {
+  try {
+    await supabase.from("ab_test_clicks").insert({ variant });
+  } catch (error) {
+    console.error("A/B test click recording failed:", error);
+  }
+}
+
 function getRandomMajors(type: HollandType, count = 2): string[] {
   const majors = [...RESULT_DATA[type].majors];
   const selected: string[] = [];
@@ -678,10 +707,38 @@ function Header() {
 }
 
 function StartScreen({ onStart }: { onStart: () => void }) {
+  const [variant, setVariant] = useState<typeof AB_VARIANTS[0] | null>(null);
+
+  // 접속 시 랜덤 버전 선택 (localStorage로 동일 사용자 버전 유지)
+  useEffect(() => {
+    const storedVariantId = localStorage.getItem("ab_variant");
+    if (storedVariantId) {
+      const found = AB_VARIANTS.find((v) => v.id === storedVariantId);
+      if (found) {
+        setVariant(found);
+        return;
+      }
+    }
+    // 저장된 버전이 없으면 랜덤 선택
+    const randomIndex = Math.floor(Math.random() * AB_VARIANTS.length);
+    const selectedVariant = AB_VARIANTS[randomIndex];
+    localStorage.setItem("ab_variant", selectedVariant.id);
+    setVariant(selectedVariant);
+  }, []);
+
   const handleStart = () => {
     trackEvent("click_event_start");
+    // A/B 테스트 클릭 기록
+    if (variant) {
+      recordABTestClick(variant.id);
+    }
     onStart();
   };
+
+  // 버전 로딩 중에는 빈 화면 표시
+  if (!variant) {
+    return null;
+  }
 
   return (
     <motion.div
@@ -696,14 +753,18 @@ function StartScreen({ onStart }: { onStart: () => void }) {
         <Sparkles className="w-16 h-16 sm:w-20 sm:h-20 text-lime-400 mb-4 sm:mb-6 mx-auto" />
       </motion.div>
       <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-3 sm:mb-4 text-white leading-tight">
-        나에게 딱 맞는
+        {variant.title1}
         <br />
-        고등학교 학과 찾기
+        {variant.title2}
       </h1>
       <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-6 sm:mb-8 font-bold">
-        인문계? 특성화고? 내 적성은 어디일까?
-        <br />
-        (AI 진로 분석) 🔥
+        {variant.subtitle1}
+        {variant.subtitle2 && (
+          <>
+            <br />
+            {variant.subtitle2}
+          </>
+        )}
       </p>
       <motion.button
         whileHover={{ scale: 1.05 }}
