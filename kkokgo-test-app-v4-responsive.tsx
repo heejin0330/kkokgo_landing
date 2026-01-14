@@ -1063,7 +1063,7 @@ export default function App() {
                 {/* 프로그레스 바 영역 - 고정 높이 */}
                 <div className="flex-shrink-0 p-4 sm:p-6 pb-2">
                   <div className="text-white text-center mb-2 font-bold text-base sm:text-lg">
-                    나의 잠재력 분석 중... {Math.round(progress)}%
+                    나의 커리어 코드 분석 중... {Math.round(progress)}%
                   </div>
                   <ProgressBar progress={progress} />
                 </div>

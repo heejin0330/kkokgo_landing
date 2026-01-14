@@ -1249,12 +1249,12 @@ function ResultView({
         {data.emoji}
       </motion.div>
 
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-300 mb-1 sm:mb-2">
-        {data.desc}
-      </h2>
       <span className="text-lime-400 text-xs font-bold border border-lime-400/30 rounded-full px-3 py-1 mb-2">
         TYPE {resultType} : {data.type}
       </span>
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-300 mb-1 sm:mb-2">
+        {data.desc}
+      </h2>
       <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-6 sm:mb-8 text-white">
         {data.title}
       </h1>
@@ -1944,7 +1944,7 @@ export default function Home() {
                   <div className="text-white text-center mb-2 font-bold text-base sm:text-lg">
                     {isPremiumMode
                       ? "정밀 진단 진행 중..."
-                      : "나의 잠재력 분석 중..."}{" "}
+                      : "나의 커리어 코드 분석 중..."}{" "}
                     {Math.round(progress)}%
                   </div>
                   <ProgressBar progress={progress} />
