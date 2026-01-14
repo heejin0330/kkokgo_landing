@@ -694,7 +694,7 @@ function useTestLogic(): UseTestLogicReturn {
 // ------------------------------------------------------------------
 function Header() {
   return (
-    <header className="fixed top-0 left-0 w-full h-14 sm:h-16 z-50 backdrop-blur-xl bg-slate-950/80 border-b border-white/10">
+    <header className="fixed top-0 left-0 w-full h-14 sm:h-16 z-50 backdrop-blur-xl bg-slate-950/80">
       <div className="h-full flex items-center justify-center">
         <div className="w-full max-w-[420px] px-4 sm:px-6">
           <h1 className="text-2xl sm:text-3xl font-black font-sans tracking-tighter text-white">
@@ -841,7 +841,7 @@ function SwipeCard({
       role="region"
       aria-label={`질문: ${question.text}`}
     >
-      <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
+      <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl">
         <div className="text-5xl sm:text-6xl mb-4 sm:mb-6 text-center">🤔</div>
         <p className="text-lg sm:text-xl font-bold text-white leading-relaxed text-center">
           {question.text}
@@ -869,7 +869,7 @@ function PremiumQuestionCard({
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className="w-full max-w-sm mx-auto"
     >
-      <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
+      <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl">
         <div className="text-5xl sm:text-6xl mb-4 sm:mb-6 text-center">🤔</div>
         <p className="text-lg sm:text-xl font-bold text-white leading-relaxed text-center mb-8">
           {question.text}
@@ -1499,19 +1499,11 @@ function ResultView({
             className="absolute inset-0 flex items-center justify-center"
           >
             <div className="w-full bg-black/70 backdrop-blur-sm rounded-3xl p-4 sm:p-6 mx-2">
-              <div className="flex items-center gap-3 mb-4">
-                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-lime-400 flex-shrink-0" />
-                <div className="text-white font-bold text-sm sm:text-base leading-snug">
-                  <p className="mb-1">
-                    고등학교 <span className="text-lime-400">꼭 일반고</span>를
-                    가야할까?
-                  </p>
-                  <p className="text-xs sm:text-sm text-gray-300">
-                    내 적성에 맞는{" "}
-                    <span className="text-lime-400">마이스터고, 특성화고</span>{" "}
-                    추천리스트 받기 👇
-                  </p>
-                </div>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-lime-400" />
+                <h3 className="text-white font-black text-lg sm:text-xl">
+                  무료 리포트 잠금 해제
+                </h3>
               </div>
               <div className="flex gap-2 mb-3">
                 <div className="flex-1 relative">
@@ -1591,7 +1583,7 @@ function ResultView({
               >
                 {isSubmitting
                   ? "저장 중..."
-                  : "🔓 무료 리포트 잠금 해제하기"}
+                  : "지금 바로 해제하기 →"}
               </button>
             </div>
           </motion.div>
@@ -1859,9 +1851,6 @@ function ResultView({
       >
         다시 테스트하기
       </button>
-      <div className="text-center text-white/20 text-[10px] mt-6 sm:mt-8">
-        © 2026 PADA Labs. All rights reserved.
-      </div>
     </motion.div>
   );
 }
@@ -2165,6 +2154,10 @@ export default function Home() {
               </motion.div>
             )}
           </AnimatePresence>
+          {/* 푸터 - 전체 페이지에 표시 */}
+          <div className="flex-shrink-0 text-center text-white/20 text-[10px] py-4">
+            © 2026 PADA Labs. All rights reserved.
+          </div>
         </div>
       </div>
     </div>
